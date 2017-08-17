@@ -1,4 +1,5 @@
 import React, { Component } from 'react';
+import FormPartial from './FormPartial';
 
 export default class TodosEdit extends Component {
   constructor(props) {
@@ -9,8 +10,8 @@ export default class TodosEdit extends Component {
       duration: ''
     };
 
-    this.onChangeHandler = this.onChangeHandler.bind(this);
-    this.onSubmitHandler = this.onSubmitHandler.bind(this);
+    this.handleChange = this.handleChange.bind(this);
+    this.handleSubmit = this.handleSubmit.bind(this);
   }
 
   componentDidMount() {
@@ -20,11 +21,10 @@ export default class TodosEdit extends Component {
       .then(({ name, duration }) => this.setState({ name, duration }));
   }
 
-  onSubmitHandler(event) {
+  handleSubmit(event) {
     event.preventDefault();
     const { name, duration } = this.state;
     const { id } = this.props.match.params;
-    console.log(name, duration);
     fetch(`/api/todos/edit/${id}`, {
       method: 'put',
       headers: new Headers({
@@ -38,7 +38,7 @@ export default class TodosEdit extends Component {
     });
   }
 
-  onChangeHandler(event) {
+  handleChange(event) {
     this.setState({
       [event.target.name]: event.target.value
     });
@@ -46,23 +46,12 @@ export default class TodosEdit extends Component {
 
   render() {
     return (
-      <form onSubmit={this.onSubmitHandler}>
-        <label>Name of Activity: </label>
-        <input
-          name="name"
-          onChange={this.onChangeHandler}
-          type="text"
-          value={this.state.name}
-        />
-        <label>Duration of Activity: </label>
-        <input
-          name="duration"
-          onChange={this.onChangeHandler}
-          type="text"
-          value={this.state.duration}
-        />
-        <input type="submit" value="Edit Activity" />
-      </form>
+      <FormPartial
+        {...this.props}
+        onChangeHandler={this.handleChange}
+        onSubmitHandler={this.handleSubmit}
+        {...this.state}
+      />
     );
   }
 }
