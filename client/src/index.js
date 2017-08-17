@@ -1,74 +1,83 @@
 import React, { Component } from 'react';
 import ReactDOM from 'react-dom';
-import { BrowserRouter, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Route, Switch } from 'react-router-dom';
 
 import Header from './components/Header';
-import TodosIndex from './components/todos/index';
-import TodosNew from './components/todos/new';
-import TodosEdit from './components/todos/edit';
+import TodosIndex from './components/todos/TodosIndex';
+import TodosNew from './components/todos/TodosNew';
+import TodosEdit from './components/todos/TodosEdit';
+import Admin from './components/Admin';
+import Footer from './components/Footer';
 
 class App extends Component {
-	constructor(props) {
-		super(props);
-		this.state = {
-			loggedIn: false
-		};
-		this.onClickHandler = this.onClickHandler.bind(this);
-	}
+  constructor(props) {
+    super(props);
 
-	componentDidMount() {
-		fetch('/api/todos/UserInfo', { credentials: 'include' })
-			.then(res => res.json())
-			.then(user => this.setState({ loggedIn: true }))
-			.catch(e => console.log('User not logged in'));
-	}
+    this.state = {
+      user: null,
+      admin: false,
+      loggedIn: false
+    };
 
-	onClickHandler(history) {
-		switch (this.state.loggedIn) {
-			case false:
-				fetch('/auth/facebook', { credentials: 'include', mode: 'no-cors' })
-					.then(() => {
-						this.setState({ loggedIn: true });
-						history.push('/');
-					})
-					.catch(e => console.log(e));
-				break;
-			case true:
-				fetch('/auth/logout', { credentials: 'include' }).then(() => {
-					this.setState({ loggedIn: false });
-					history.push('/');
-				});
-				break;
-			default:
-				console.log('What are you trying to do');
-		}
-	}
+    this.handleAuth = this.handleAuth.bind(this);
+  }
 
-	render() {
-		return (
-			<BrowserRouter>
-				<div>
-					<Route
-						path="/"
-						component={props =>
-							<Header
-								{...props}
-								onClickHandler={this.onClickHandler}
-								loggedIn={this.state.loggedIn}
-							/>}
-					/>
-					<Route path="/todos/new" component={TodosNew} />
-					<Route path="/todos/edit/:id" component={TodosEdit} />
-					<Route
-						exact
-						path="/"
-						component={props =>
-							<TodosIndex {...props} loggedIn={this.state.loggedIn} />}
-					/>
-				</div>
-			</BrowserRouter>
-		);
-	}
+  componentDidMount() {
+    fetch('/auth/userInfo', { credentials: 'include' })
+      .then(res => res.json())
+      .then(user => {
+        if (user.email) {
+          this.setState({ user, admin: user.admin, loggedIn: true });
+        }
+      })
+      .catch(e => console.log(e));
+  }
+
+  handleAuth(newState) {
+    this.setState({ ...newState });
+  }
+
+  render() {
+    return (
+      <Router>
+        <div>
+          <header>
+            <Route
+              component={props =>
+                <Header
+                  {...props}
+                  authHandler={this.handleAuth}
+                  {...this.state}
+                />}
+            />
+          </header>
+          <main>
+            <Switch>
+              <Route
+                exact
+                path="/"
+                component={props => <TodosIndex {...props} {...this.state} />}
+              />
+              <Route
+                path="/todos/new"
+                component={props => <TodosNew {...props} {...this.state} />}
+              />
+              <Route
+                path="/todos/edit/:id"
+                component={props => <TodosEdit {...props} {...this.state} />}
+              />
+              <Route
+                path="/admin"
+                component={props => <Admin {...props} {...this.state} />}
+              />
+              <Route component={() => <div>SORRY No PAGE with that url</div>} />
+            </Switch>
+          </main>
+          <Route component={Footer} />
+        </div>
+      </Router>
+    );
+  }
 }
 
 ReactDOM.render(<App />, document.querySelector('#root'));
