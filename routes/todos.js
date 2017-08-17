@@ -1,55 +1,49 @@
 const express = require('express'),
-	router = express.Router();
+  router = express.Router();
 
 const Todo = require('../models/Todo');
 
+// if admin, get all todos from database
+// if nonAdmin, get all todos for reqeust date
 router.get('/', (req, res) => {
-	const { date: lowerBound } = req.query;
-	const upperBound = new Date(lowerBound);
-	upperBound.setDate(upperBound.getDate() + 1);
-	if (req.user) {
-		Todo.find()
-			.where('createdAt')
-			.gt(lowerBound)
-			.lt(upperBound)
-			.then(todos => {
-				res.json(todos);
-			})
-			.catch(e => console.log(e));
-	} else {
-		res.send([]);
-	}
+  if (req.user.admin) {
+    Todo.getTodos().then(todos => res.json(todos));
+  }
+  req.user
+    .getTodosForDate(req.query.date)
+    .then(todos => {
+      return res.json(todos);
+    })
+    .catch(e => console.log(e));
 });
 
-router.get('/userInfo', (req, res) => {
-	res.json(req.user);
-});
-
+// get todo with request param id
 router.get('/edit/:id', (req, res) => {
-	Todo.findById(req.params.id)
-		.then(todo => {
-			res.json(todo);
-		})
-		.catch(e => console.log(e));
+  Todo.findById(req.params.id)
+    .then(todo => {
+      res.json(todo);
+    })
+    .catch(e => console.log(e));
 });
 
+// create new todo with request body
 router.post('/', (req, res) => {
-	const { body: { name, duration }, user } = req;
-	console.log(name, duration, user);
-	Todo.create({ name, duration, user })
-		.then(todo => {
-			res.json(todo);
-		})
-		.catch(e => console.log(e));
+  const { body: { name, duration }, user } = req;
+  Todo.create({ name, duration, user })
+    .then(todo => {
+      res.json(todo);
+    })
+    .catch(e => console.log(e));
 });
 
+// update todo with request body
 router.put('/edit/:id', (req, res) => {
-	const { params: { id: _id }, body: { name, duration } } = req;
-	Todo.findOneAndUpdate({ _id }, { $set: { name, duration } }, { new: true })
-		.then(updatedTodo => {
-			res.json(updatedTodo);
-		})
-		.catch(e => console.log(e));
+  const { params: { id: _id }, body: { name, duration } } = req;
+  Todo.findOneAndUpdate({ _id }, { $set: { name, duration } }, { new: true })
+    .then(updatedTodo => {
+      res.json(updatedTodo);
+    })
+    .catch(e => console.log(e));
 });
 
 module.exports = router;
