@@ -1,7 +1,8 @@
-const passport = require("passport"),
-  FacebookStrategy = require("passport-facebook").Strategy,
-  User = require("../models/User"),
-  { FACEBOOK_APP_ID, FACEBOOK_APP_SECRET } = require("./keys");
+const passport = require('passport'),
+  FacebookStrategy = require('passport-facebook').Strategy,
+  LocalStrategy = require('passport-local').Strategy,
+  User = require('../models/User'),
+  { FACEBOOK_APP_ID, FACEBOOK_APP_SECRET } = require('./keys');
 
 passport.serializeUser(function(user, done) {
   done(null, user.id);
@@ -18,8 +19,9 @@ passport.use(
     {
       clientID: FACEBOOK_APP_ID,
       clientSecret: FACEBOOK_APP_SECRET,
-      callbackURL: "/auth/facebook/callback",
-      profileFields: ["id", "displayName", "email"]
+      callbackURL: '/auth/facebook/callback',
+      profileFields: ['id', 'displayName', 'email'],
+      proxy: true
     },
     function(accessToken, refreshToken, profile, done) {
       const { id: facebookId, email, name } = profile._json;
@@ -36,3 +38,26 @@ passport.use(
         .catch(e => console.log(e));
     }
   )
+);
+
+passport.use(
+  new LocalStrategy({ usernameField: 'email' }, function(
+    email,
+    password,
+    done
+  ) {
+    User.findOne({ email })
+      .then(user => {
+        if (!user) return done(null, false);
+        return user.verifyPassword(password);
+      })
+      .then(user => {
+        if (!user) return done(null, false);
+        return done(null, user);
+      })
+      .catch(e => {
+        console.log(e);
+        return done(e);
+      });
+  })
+);
